@@ -1,0 +1,62 @@
+services:
+  app:
+    image: localplace/daya-companyprofile:latest
+    environment:
+      APP_NAME: "Daya Company Profile"
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_KEY: /run/secrets/production_app_key
+      APP_URL: https://daya.localplace.id
+      DB_CONNECTION: pgsql
+      DB_HOST: docker.host.internal
+      DB_PORT: 5432
+      DB_DATABASE: localplace_production
+      DB_USERNAME: localplace_production
+      DB_PASSWORD: /run/secrets/production_db_password
+      SESSION_DRIVER: database
+      CACHE_STORE: database
+      REDIS_CLIENT: phpredis
+      REDIS_HOST: 127.0.0.1
+      REDIS_PASSWORD: null
+      REDIS_PORT: 6379
+      TZ: Asia/Jakarta
+    extra_hosts:
+      - docker.host.internal:host-gateway
+    secrets:
+      - production_app_key
+      - production_db_password
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=traefik-public"
+        - "traefik.constraint-label=traefik-public"
+        - "traefik.http.routers.daya.rule=Host(`daya.localplace.id`)"
+        - "traefik.http.routers.daya.entrypoints=http"
+        - "traefik.http.routers.daya-https.rule=Host(`daya.localplace.id`)"
+        - "traefik.http.routers.daya-https.entrypoints=https"
+        - "traefik.http.routers.daya-https.tls.certresolver=le"
+        - "traefik.http.routers.daya-https.tls=true"
+        - "traefik.http.services.daya-https.loadbalancer.server.port=8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 30s
+      retries: 5
+    networks:
+      - traefik-public
+      - prod-private
+
+secrets:
+  production_app_key:
+    external: true
+  production_db_password:
+    external: true
+
+networks:
+  traefik-public:
+    external: true
+  prod-private:
+    external: true

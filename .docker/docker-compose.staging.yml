@@ -1,0 +1,62 @@
+services:
+  app:
+    image: localplace/daya-companyprofile:staging
+    environment:
+      APP_NAME: "Daya Company Profile"
+      APP_ENV: staging
+      APP_DEBUG: "true"
+      APP_KEY: /run/secrets/staging_app_key
+      APP_URL: https://staging-daya.localplace.id
+      DB_CONNECTION: pgsql
+      DB_HOST: docker.host.internal
+      DB_PORT: 5432
+      DB_DATABASE: localplace_staging
+      DB_USERNAME: localplace_staging
+      DB_PASSWORD: /run/secrets/staging_db_password
+      SESSION_DRIVER: database
+      CACHE_STORE: database
+      REDIS_CLIENT: phpredis
+      REDIS_HOST: 127.0.0.1
+      REDIS_PASSWORD: null
+      REDIS_PORT: 6379
+      TZ: Asia/Jakarta
+    extra_hosts:
+      - docker.host.internal:host-gateway
+    secrets:
+      - staging_app_key
+      - staging_db_password
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=traefik-public"
+        - "traefik.constraint-label=traefik-public"
+        - "traefik.http.routers.staging-daya.rule=Host(`staging-daya.localplace.id`)"
+        - "traefik.http.routers.staging-daya.entrypoints=http"
+        - "traefik.http.routers.staging-daya-https.rule=Host(`staging-daya.localplace.id`)"
+        - "traefik.http.routers.staging-daya-https.entrypoints=https"
+        - "traefik.http.routers.staging-daya-https.tls.certresolver=le"
+        - "traefik.http.routers.staging-daya-https.tls=true"
+        - "traefik.http.services.staging-daya-https.loadbalancer.server.port=8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 30s
+      retries: 5
+    networks:
+      - traefik-public
+      - staging-private
+
+secrets:
+  staging_app_key:
+    external: true
+  staging_db_password:
+    external: true
+
+networks:
+  traefik-public:
+    external: true
+  staging-private:
+    external: true

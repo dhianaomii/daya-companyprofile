@@ -1,0 +1,36 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        APP_ENV: local
+    image: daya-companyprofile:local
+    container_name: daya-cp-app
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./.env:/var/www/html/.env
+    environment:
+      APP_NAME: "${APP_NAME:-Daya Company Profile}"
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_KEY: "${APP_KEY}"
+      APP_URL: http://localhost:8080
+      DB_CONNECTION: pgsql
+      DB_HOST: localplace-backend-postgres-1
+      DB_PORT: 5432
+      DB_DATABASE: "${DB_DATABASE:-app}"
+      DB_USERNAME: "${DB_USERNAME:-postgres}"
+      DB_PASSWORD: "${DB_PASSWORD:-postgres}"
+      SESSION_DRIVER: database
+      CACHE_STORE: database
+      TZ: Asia/Jakarta
+    networks:
+      - localplace-backend_app
+    extra_hosts:
+      - host.docker.internal:host-gateway
+
+networks:
+  localplace-backend_app:
+    external: true
